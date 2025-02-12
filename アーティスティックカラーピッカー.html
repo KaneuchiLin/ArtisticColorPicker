@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>ConceptArt</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <style>
+            body{
+                background-color:#f0f0f0;
+                text-align:center;
+                justify-content:center;
+                align-items:center;
+            }
+            canvas{
+                border:black dashed;
+                background-color:white;
+            }
+            .colors{
+                display:flex;
+                flex-wrap:wrap;
+                width:500px;
+                margin:0 auto;
+            }
+            .palette{
+                border-radius:10px;
+                text-align:center;
+                line-height:50px;
+                width:100px;
+                height:50px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>ArtisticColorPicker</h1>
+        <input id="fileInput" type="file"><button id="download">Download</button><br>
+        <canvas width="500" height="500" id="canvas1"></canvas><br>
+        <canvas width="500" height="500" id="canvas2"></canvas><br>
+        <div id="colors" class="colors"></div>
+        <button id="clear">×</button><br>
+        <script>
+            class ConceptArt{
+                constructor(canvas,editedCanvas,colorsParent){
+                    this.canvas=canvas;
+                    this.editedCanvas=editedCanvas;
+                    this.colorsParent=colorsParent;
+                    this.colors=[];
+                    this.image=new Image();
+                    const ctx=this.canvas.getContext("2d");
+                    this.canvas.addEventListener("click",(event)=>{
+                        if (this.image.src==""){return 0};
+                        const rect=this.canvas.getBoundingClientRect();
+                        const scaleX=this.canvas.width/rect.width;
+                        const scaleY=this.canvas.height/rect.height;
+                        const x=(event.clientX-rect.left)*scaleX;
+                        const y=(event.clientY-rect.top)*scaleY;
+                        const pixels=ctx.getImageData(x,y,1,1).data;
+                        this.addColor(pixels);
+                    });
+                };
+                importImage(path){
+                    this.image.src=path;
+                    const ctx=this.canvas.getContext("2d");
+                    ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+                    this.image.onload=() => {
+                        this.canvas.width=this.image.width;
+                        this.canvas.height=this.image.height;
+                        this.editedCanvas.width=this.image.width;
+                        this.editedCanvas.height=this.image.height;
+                        const maxSize=500;
+                        const scale=Math.min((maxSize/this.canvas.width),(maxSize/this.canvas.height))
+                        this.canvas.style.width=`${parseInt(this.canvas.width)*scale}px`;
+                        this.canvas.style.height=`${parseInt(this.canvas.height)*scale}px`;
+                        this.editedCanvas.style.width=`${parseInt(this.editedCanvas.width)*scale}px`;
+                        this.editedCanvas.style.height=`${parseInt(this.editedCanvas.height)*scale}px`;
+                        ctx.drawImage(this.image,0,0);
+                        this.editImage();
+                    };
+                };
+                addColor(color){
+                    this.colors.push(color);
+                    const palette=document.createElement("div");
+                    palette.style.backgroundColor=toCode(color);
+                    if ((Math.min(color[0],color[1],color[2])+Math.max(color[0],color[1],color[2]))/2 >= 128){palette.style.color="black";}else{palette.style.color="white";};
+                    palette.classList.add("palette");
+                    palette.textContent=toCode(color);
+                    palette.addEventListener("click",() => {
+                        const index=this.colors.findIndex(item => item[0] === color[0]&&item[1] === color[1]&&item[2] === color[2]&&item[3] === color[3]);
+                        this.colors.splice(index,1);
+                        palette.remove();
+                        this.editImage();
+                    });
+                    this.colorsParent.appendChild(palette);
+                    this.editImage();
+                };
+                editImage(){
+                    if (this.colors.length===0){return 0;}
+                    const ctx=this.canvas.getContext("2d");
+                    const editedCtx=this.editedCanvas.getContext("2d");
+                    editedCtx.clearRect(0,0,this.editedCanvas.width,this.editedCanvas.height);
+                    const imageData=ctx.getImageData(0,0,this.canvas.width,this.canvas.height);
+                    let pixels=imageData.data;
+                    for (let i=0;i<pixels.length;i+=4){
+                        let r=pixels[i];
+                        let g=pixels[i+1];
+                        let b=pixels[i+2];
+                        let color=this.colors.reduce((closest,current) => {
+                            const distClosest=Math.sqrt((r-closest[0])**2+(g-closest[1])**2+(b-closest[2])**2);
+                            const distCurrent=Math.sqrt((r-current[0])**2+(g-current[1])**2+(b-current[2])**2);
+                            return distCurrent < distClosest ? current:closest;
+                        });
+                        pixels[i]=color[0];
+                        pixels[i+1]=color[1];
+                        pixels[i+2]=color[2];
+                    };
+                    editedCtx.putImageData(imageData,0,0);
+                };
+            };
+            function toCode(color){
+                return `#${parseInt(color[0]).toString(16).padStart(2,"0")}${parseInt(color[1]).toString(16).padStart(2,"0")}${parseInt(color[2]).toString(16).padStart(2,"0")}`
+            };
+            const fileInput=document.getElementById("fileInput");
+            const downloadButton=document.getElementById("download");
+            const canvas1=document.getElementById("canvas1");
+            const canvas2=document.getElementById("canvas2");
+            const colors=document.getElementById("colors");
+            const clearButton=document.getElementById("clear");
+            fileInput.addEventListener("change",function(){
+                const file=fileInput.files[0];
+                if (file){
+                    const reader=new FileReader();
+                    reader.onload=function(event){
+                        conceptArt.importImage(event.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                };
+            });
+            const conceptArt=new ConceptArt(canvas1,canvas2,colors);
+            downloadButton.addEventListener("click",function(){
+                const url=canvas2.toDataURL("image/png");
+                const a=document.createElement("a");
+                a.href=url;
+                a.download="edited_image.png";
+                a.click();
+            });
+            clearButton.addEventListener("click",function(){
+                colors.innerHTML="";
+                conceptArt.colors=[];
+                conceptArt.editedCanvas.getContext("2d").clearRect(0,0,conceptArt.editedCanvas.width,conceptArt.editedCanvas.height)
+            });
+        </script>
+    </body>
+</html>
