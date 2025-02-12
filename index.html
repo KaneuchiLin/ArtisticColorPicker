@@ -47,7 +47,10 @@
                     this.image=new Image();
                     const ctx=this.canvas.getContext("2d");
                     this.canvas.addEventListener("click",(event)=>{
-                        if (this.image.src==""){return 0};
+                        if (this.image.src==""){
+                            fileInput.click();
+                            return 0
+                        };
                         const rect=this.canvas.getBoundingClientRect();
                         const scaleX=this.canvas.width/rect.width;
                         const scaleY=this.canvas.height/rect.height;
