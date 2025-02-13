@@ -33,8 +33,8 @@
     <body>
         <h1>ArtisticColorPicker</h1>
         <input id="fileInput" type="file"><button id="download">Download</button><br>
-        <canvas width="400" height="400" id="canvas1"></canvas><br>
-        <canvas width="400" height="400" id="canvas2"></canvas><br>
+        <canvas width="500" height="500" id="canvas1"></canvas><br>
+        <canvas width="500" height="500" id="canvas2"></canvas><br>
         <div id="colors" class="colors"></div>
         <button id="clear">×</button><br>
         <script>
@@ -69,7 +69,7 @@
                         this.canvas.height=this.image.height;
                         this.editedCanvas.width=this.image.width;
                         this.editedCanvas.height=this.image.height;
-                        const maxSize=400;
+                        const maxSize=500;
                         const scale=Math.min((maxSize/this.canvas.width),(maxSize/this.canvas.height))
                         this.canvas.style.width=`${parseInt(this.canvas.width)*scale}px`;
                         this.canvas.style.height=`${parseInt(this.canvas.height)*scale}px`;
